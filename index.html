@@ -3,14 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elegant Memory Game</title>
+    <title>Luxury Memory Game</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 </head>
 <body>
     <div class="game-container">
+        <div class="background-pattern"></div>
+        
         <header class="game-header">
-            <h1>Elegant Memory</h1>
+            <h1 class="animate__animated animate__fadeInDown">Luxury Memory</h1>
+            <div class="difficulty-selector">
+                <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
+                <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+                <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+            </div>
             <div class="stats">
                 <div class="stat">
                     <span class="label">Time</span>
@@ -25,23 +33,47 @@
                     <span id="best" class="value">--</span>
                 </div>
             </div>
-            <button id="restart-btn" class="btn">⟳ Restart</button>
+            <button id="restart-btn" class="btn">
+                <span class="btn-icon">⟳</span> New Game
+            </button>
         </header>
 
         <main class="game-board" id="game-board"></main>
 
         <div class="modal-overlay" id="modal">
-            <div class="modal-content">
-                <h2>Perfect! ✨</h2>
+            <div class="modal-content animate__animated">
+                <div class="trophy-icon">🏆</div>
+                <h2>Flawless Victory!</h2>
                 <div class="stats">
-                    <p>Moves: <span id="final-moves">0</span></p>
-                    <p>Time: <span id="final-time">00:00</span></p>
+                    <div class="stat">
+                        <span class="label">Time</span>
+                        <span id="final-time">00:00</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Moves</span>
+                        <span id="final-moves">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Score</span>
+                        <span id="final-score">100</span>
+                    </div>
                 </div>
-                <p id="best-message">🏆 New Record! 🏆</p>
-                <button id="play-again-btn" class="btn">Play Again</button>
+                <p id="best-message">New High Score!</p>
+                <div class="modal-buttons">
+                    <button id="play-again-btn" class="btn">Play Again</button>
+                    <button id="share-btn" class="btn btn-outline">Share</button>
+                </div>
             </div>
         </div>
+
+        <div class="sound-control">
+            <button id="sound-btn" class="sound-btn">🔊</button>
+        </div>
     </div>
+
+    <audio id="flip-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-card-flip-1555.mp3"></audio>
+    <audio id="match-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-positive-interface-beep-221.mp3"></audio>
+    <audio id="win-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
 
     <script src="script.js"></script>
 </body>
