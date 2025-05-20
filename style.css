@@ -570,3 +570,24 @@ body {
       min-width: 60px;
     }
   }
+
+  .modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--gold-light);
+    border: 2px solid var(--gold-light);
+}
+
+.btn-outline:hover {
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.btn-icon {
+    margin-right: 8px;
+}
