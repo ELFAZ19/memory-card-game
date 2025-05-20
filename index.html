@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Card Game</title>
+    <title>Elegant Memory Game</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="game-container">
         <header class="game-header">
-            <h1>Memory Magic</h1>
+            <h1>Elegant Memory</h1>
             <div class="stats">
                 <div class="stat">
                     <span class="label">Time</span>
@@ -25,20 +25,20 @@
                     <span id="best" class="value">--</span>
                 </div>
             </div>
-            <button id="restart-btn" class="btn pulse">⟳ Restart</button>
+            <button id="restart-btn" class="btn">⟳ Restart</button>
         </header>
 
         <main class="game-board" id="game-board"></main>
 
         <div class="modal-overlay" id="modal">
-            <div class="modal-content zoom-in">
-                <h2>✨ You Won! ✨</h2>
+            <div class="modal-content">
+                <h2>Perfect! ✨</h2>
                 <div class="stats">
                     <p>Moves: <span id="final-moves">0</span></p>
                     <p>Time: <span id="final-time">00:00</span></p>
                 </div>
-                <p id="best-message" class="tada">🏆 New Record! 🏆</p>
-                <button id="play-again-btn" class="btn pulse">Play Again</button>
+                <p id="best-message">🏆 New Record! 🏆</p>
+                <button id="play-again-btn" class="btn">Play Again</button>
             </div>
         </div>
     </div>
