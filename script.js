@@ -67,6 +67,31 @@ const flipSound = document.getElementById("flip-sound");
 const matchSound = document.getElementById("match-sound");
 const winSound = document.getElementById("win-sound");
 
+// Adjust card grid on resize
+window.addEventListener('resize', adjustCardGrid);
+
+function adjustCardGrid() {
+  const gameBoard = document.getElementById('game-board');
+  const headerHeight = document.querySelector('.game-header').offsetHeight;
+  
+  // Calculate available height
+  const availableHeight = window.innerHeight - headerHeight - 40; // 40px padding
+  
+  // Set game board height
+  gameBoard.style.height = `${availableHeight}px`;
+  
+  // Adjust columns based on aspect ratio
+  const aspectRatio = window.innerWidth / window.innerHeight;
+  if (aspectRatio < 0.8) { // Tall screens
+    gameBoard.style.gridTemplateColumns = 'repeat(3, 1fr)';
+  } else { // Wide screens
+    gameBoard.style.gridTemplateColumns = 'repeat(4, 1fr)';
+  }
+}
+
+// Call initially
+adjustCardGrid();
+
 // Initialize Game
 function initGame() {
   // Reset game state
