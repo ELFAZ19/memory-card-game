@@ -592,3 +592,18 @@ body {
     margin-right: 8px;
 }
 
+/* Moves left indicator */
+#moves-left {
+    transition: color 0.3s ease;
+  }
+  
+  /* Efficiency grades */
+  #efficiency {
+    font-weight: bold;
+  }
+  #efficiency[data-grade="A+"] { color: #4CAF50; }
+  #efficiency[data-grade="A"] { color: #4CAF50; }
+  #efficiency[data-grade="B"] { color: #8BC34A; }
+  #efficiency[data-grade="C"] { color: #FFC107; }
+  #efficiency[data-grade="D"] { color: #FF9800; }
+  #efficiency[data-grade="F"] { color: #F44336; }
