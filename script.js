@@ -1,4 +1,4 @@
-// Enhanced Game Data with Luxury Symbols
+// Game Configuration
 const cardSets = {
   easy: [
     { id: 1, name: "Spade", emoji: "♠" },
@@ -20,25 +20,27 @@ const cardSets = {
   ],
 };
 
-// Move limits and scoring parameters
 const gameSettings = {
   easy: {
     moveLimit: 20,
     baseScore: 1000,
     perfectBonus: 500,
     movePenalty: 20,
+    timeBonusMax: 300,
   },
   medium: {
     moveLimit: 30,
     baseScore: 1500,
     perfectBonus: 750,
     movePenalty: 15,
+    timeBonusMax: 450,
   },
   hard: {
     moveLimit: 40,
     baseScore: 2000,
     perfectBonus: 1000,
     movePenalty: 10,
+    timeBonusMax: 600,
   },
 };
 
@@ -56,29 +58,32 @@ let bestScores = JSON.parse(localStorage.getItem("luxuryMemoryBestScores")) || {
   medium: null,
   hard: null,
 };
-let soundEnabled = true;
+let soundEnabled = localStorage.getItem("luxuryMemorySoundEnabled") !== "false";
 
 // DOM Elements
-const gameBoard = document.getElementById("game-board");
-const movesDisplay = document.getElementById("moves");
-const movesLeftDisplay = document.getElementById("moves-left");
-const timeDisplay = document.getElementById("time");
-const bestDisplay = document.getElementById("best");
-const restartBtn = document.getElementById("restart-btn");
-const modal = document.getElementById("modal");
-const finalMoves = document.getElementById("final-moves");
-const finalTime = document.getElementById("final-time");
-const finalScore = document.getElementById("final-score");
-const efficiencyDisplay = document.getElementById("efficiency");
-const bestMessage = document.getElementById("best-message");
-const playAgainBtn = document.getElementById("play-again-btn");
-const shareBtn = document.getElementById("share-btn");
-const soundBtn = document.getElementById("sound-btn");
-const difficultyBtns = document.querySelectorAll(".difficulty-btn");
-const flipSound = document.getElementById("flip-sound");
-const matchSound = document.getElementById("match-sound");
-const winSound = document.getElementById("win-sound");
-const loseSound = document.getElementById("lose-sound");
+const elements = {
+  gameBoard: document.getElementById("game-board"),
+  movesDisplay: document.getElementById("moves"),
+  movesLeftDisplay: document.getElementById("moves-left"),
+  timeDisplay: document.getElementById("time"),
+  bestDisplay: document.getElementById("best"),
+  restartBtn: document.getElementById("restart-btn"),
+  modal: document.getElementById("modal"),
+  finalMoves: document.getElementById("final-moves"),
+  finalTime: document.getElementById("final-time"),
+  finalScore: document.getElementById("final-score"),
+  efficiencyDisplay: document.getElementById("efficiency"),
+  bestMessage: document.getElementById("best-message"),
+  playAgainBtn: document.getElementById("play-again-btn"),
+  shareBtn: document.getElementById("share-btn"),
+  soundBtn: document.getElementById("sound-btn"),
+  modalTitle: document.querySelector(".modal-content h2"),
+  difficultyBtns: document.querySelectorAll(".difficulty-btn"),
+  flipSound: document.getElementById("flip-sound"),
+  matchSound: document.getElementById("match-sound"),
+  winSound: document.getElementById("win-sound"),
+  loseSound: document.getElementById("lose-sound"),
+};
 
 // Initialize Game
 function initGame() {
@@ -88,15 +93,16 @@ function initGame() {
   matchedIds.clear();
   gameActive = true;
 
-  movesDisplay.textContent = moves;
-  movesLeftDisplay.textContent = gameSettings[currentDifficulty].moveLimit;
+  elements.movesDisplay.textContent = moves;
+  elements.movesLeftDisplay.textContent =
+    gameSettings[currentDifficulty].moveLimit;
   updateTimerDisplay();
   clearInterval(timer);
 
   const set = cardSets[currentDifficulty];
-  bestDisplay.textContent = bestScores[currentDifficulty] ?? "--";
+  elements.bestDisplay.textContent = bestScores[currentDifficulty] ?? "--";
 
-  // Duplicate each card for pairs
+  // Create card pairs with unique IDs
   cards = set
     .flatMap((card) => [
       { ...card, uniqueId: crypto.randomUUID() },
@@ -109,125 +115,62 @@ function initGame() {
   adjustCardGrid();
 }
 
-// Render Cards with moves left indicator
+// Render Cards
 function renderCards() {
-  gameBoard.innerHTML = "";
+  elements.gameBoard.innerHTML = "";
   cards.forEach((card) => {
-    gameBoard.appendChild(createCardElement(card));
+    const cardElement = createCardElement(card);
+    elements.gameBoard.appendChild(cardElement);
   });
+  updateMovesDisplay();
+}
 
-  // Update moves left display
-  const movesLeft = gameSettings[currentDifficulty].moveLimit - moves;
-  movesLeftDisplay.textContent = movesLeft;
+function createCardElement(card) {
+  const cardElement = document.createElement("div");
+  cardElement.className = "card";
+  cardElement.dataset.id = card.uniqueId;
 
-  // Color coding for moves left
-  if (movesLeft < gameSettings[currentDifficulty].moveLimit * 0.3) {
-    movesLeftDisplay.style.color = "#ff5252";
-  } else if (movesLeft < gameSettings[currentDifficulty].moveLimit * 0.6) {
-    movesLeftDisplay.style.color = "#ffb74d";
-  } else {
-    movesLeftDisplay.style.color = "#4CAF50";
+  const isFlipped = flippedCards.some((c) => c.uniqueId === card.uniqueId);
+  const isMatched = matchedIds.has(card.id);
+
+  if (isFlipped || isMatched) cardElement.classList.add("flipped");
+  if (isMatched) {
+    cardElement.classList.add("matched");
+    cardElement.style.pointerEvents = "none";
   }
+
+  cardElement.innerHTML = `
+    <div class="card-inner">
+      <div class="card-face card-front">${card.emoji}</div>
+      <div class="card-face card-back"></div>
+    </div>
+  `;
+
+  if (!isMatched) {
+    cardElement.addEventListener("click", () => handleCardClick(card));
+  }
+
+  return cardElement;
 }
 
-// Calculate Efficiency Rating (A-F)
-function calculateEfficiency(moves, pairs) {
-  const perfectMoves = pairs * 2; // Minimum possible moves
-  const efficiencyRatio = perfectMoves / moves;
-
-  if (efficiencyRatio >= 0.9) return "A+";
-  if (efficiencyRatio >= 0.8) return "A";
-  if (efficiencyRatio >= 0.7) return "B";
-  if (efficiencyRatio >= 0.6) return "C";
-  if (efficiencyRatio >= 0.5) return "D";
-  return "F";
-}
-
-// Enhanced Scoring System
-function calculateScore(isWin) {
+function updateMovesDisplay() {
   const settings = gameSettings[currentDifficulty];
-  const pairs = cardSets[currentDifficulty].length;
-  const perfectMoves = pairs * 2; // Minimum possible moves
+  const movesLeft = settings.moveLimit - moves;
 
-  let score = 0;
-  let efficiency = "F";
+  elements.movesDisplay.textContent = moves;
+  elements.movesLeftDisplay.textContent = movesLeft;
 
-  if (isWin) {
-    // Base score for completing
-    score = settings.baseScore;
-
-    // Efficiency bonus (more points for fewer moves)
-    const moveEfficiency =
-      1 - (moves - perfectMoves) / (settings.moveLimit - perfectMoves);
-    score += Math.floor(settings.perfectBonus * moveEfficiency);
-
-    // Time bonus (faster = better)
-    const maxTimeBonus = 500;
-    const timeEfficiency = 1 - seconds / (pairs * 10); // Adjust denominator as needed
-    score += Math.floor(maxTimeBonus * timeEfficiency);
-
-    efficiency = calculateEfficiency(moves, pairs);
+  // Color coding based on remaining moves
+  if (movesLeft < settings.moveLimit * 0.25) {
+    elements.movesLeftDisplay.style.color = "#ff5252";
+  } else if (movesLeft < settings.moveLimit * 0.5) {
+    elements.movesLeftDisplay.style.color = "#ffb74d";
   } else {
-    // Partial score for incomplete games
-    const completionRatio = matchedIds.size / pairs;
-    score = Math.floor(settings.baseScore * completionRatio * 0.5);
-    efficiency = "N/A";
+    elements.movesLeftDisplay.style.color = "#4CAF50";
   }
-
-  // Ensure score is within reasonable bounds
-  score = Math.max(
-    100,
-    Math.min(score, settings.baseScore + settings.perfectBonus + 500)
-  );
-
-  return { score, efficiency };
 }
 
-// End Game (win or lose)
-function endGame(isWin) {
-  gameActive = false;
-  clearInterval(timer);
-
-  if (soundEnabled) {
-    isWin ? winSound.play() : loseSound.play();
-  }
-
-  const { score, efficiency } = calculateScore(isWin);
-  finalMoves.textContent = moves;
-  finalTime.textContent = timeDisplay.textContent;
-  finalScore.textContent = score;
-  efficiencyDisplay.textContent = efficiency;
-
-  if (
-    isWin &&
-    (!bestScores[currentDifficulty] || score > bestScores[currentDifficulty])
-  ) {
-    bestScores[currentDifficulty] = score;
-    localStorage.setItem("luxuryMemoryBestScores", JSON.stringify(bestScores));
-    bestDisplay.textContent = score;
-    bestMessage.style.display = "block";
-  } else {
-    bestMessage.style.display = "none";
-  }
-
-  // Update modal message
-  const modalTitle = document.querySelector(".modal-content h2");
-  if (isWin) {
-    modalTitle.textContent =
-      efficiency === "A+"
-        ? "✨ Perfect Game! ✨"
-        : `✨ You Won! ✨ (${efficiency})`;
-    modalTitle.style.color = "#4CAF50";
-  } else {
-    modalTitle.textContent = "😞 Out of Moves!";
-    modalTitle.style.color = "#F44336";
-  }
-
-  modal.style.display = "flex";
-  document.querySelector(".modal-content").classList.add("animate__bounceIn");
-}
-
-// Handle Card Click with Move Limit Check
+// Handle Card Click
 function handleCardClick(card) {
   if (
     !gameActive ||
@@ -244,60 +187,160 @@ function handleCardClick(card) {
     return;
   }
 
-  if (soundEnabled) {
-    flipSound.currentTime = 0;
-    flipSound.play();
-  }
+  playSound(elements.flipSound);
+  flipCard(card);
+}
 
-  // Enhanced flip animation
+function flipCard(card) {
   const cardElement = document.querySelector(`[data-id="${card.uniqueId}"]`);
   cardElement.classList.add("flipping");
+
   setTimeout(() => {
     cardElement.classList.remove("flipping");
     flippedCards.push(card);
     renderCards();
-    checkForMatch();
+
+    if (flippedCards.length === 2) {
+      moves++;
+      checkForMatch();
+    }
   }, 150);
 }
 
-
-
-// Check for matches after flip
 function checkForMatch() {
-  if (flippedCards.length === 2) {
-    moves++;
-    movesDisplay.textContent = moves;
+  const [card1, card2] = flippedCards;
 
-    const [card1, card2] = flippedCards;
-    if (card1.id === card2.id) {
-      matchedIds.add(card1.id);
+  if (card1.id === card2.id) {
+    handleMatch();
+  } else {
+    handleMismatch();
+  }
+}
+
+function handleMatch() {
+  matchedIds.add(flippedCards[0].id);
+  playSound(elements.matchSound);
+
+  if (matchedIds.size === cardSets[currentDifficulty].length) {
+    setTimeout(() => endGame(true), 500);
+  } else {
+    flippedCards = [];
+    renderCards();
+  }
+}
+
+function handleMismatch() {
+  setTimeout(() => {
+    flippedCards.forEach((card) => {
+      const cardElement = document.querySelector(
+        `[data-id="${card.uniqueId}"]`
+      );
+      cardElement.classList.add("flipping");
+    });
+
+    setTimeout(() => {
       flippedCards = [];
+      renderCards();
+    }, 150);
+  }, 1000);
+}
 
-      if (matchedIds.size === cardSets[currentDifficulty].length) {
-        setTimeout(() => endGame(true), 500);
-      } else {
-        renderCards();
-      }
+// Game End Logic
+function endGame(isWin) {
+  gameActive = false;
+  clearInterval(timer);
+  playSound(isWin ? elements.winSound : elements.loseSound);
 
-      if (soundEnabled) {
-        matchSound.currentTime = 0;
-        matchSound.play();
-      }
-    } else {
-      setTimeout(() => {
-        flippedCards.forEach((card) => {
-          const cardElement = document.querySelector(
-            `[data-id="${card.uniqueId}"]`
-          );
-          cardElement.classList.add("flipping");
-        });
+  const { score, efficiency } = calculateScore(isWin);
+  updateResultsModal(isWin, score, efficiency);
+  updateBestScores(isWin, score);
 
-        setTimeout(() => {
-          flippedCards = [];
-          renderCards();
-        }, 150);
-      }, 1000);
-    }
+  elements.modal.style.display = "flex";
+  document.querySelector(".modal-content").classList.add("animate__bounceIn");
+}
+
+function calculateScore(isWin) {
+  const settings = gameSettings[currentDifficulty];
+  const pairs = cardSets[currentDifficulty].length;
+  const perfectMoves = pairs * 2; // Minimum possible moves
+  let score = 0;
+  let efficiency = "F";
+
+  if (isWin) {
+    // Base score
+    score = settings.baseScore;
+
+    // Efficiency bonus (based on moves used)
+    const moveEfficiency = Math.max(
+      0,
+      1 - (moves - perfectMoves) / (settings.moveLimit - perfectMoves)
+    );
+    score += Math.floor(settings.perfectBonus * moveEfficiency);
+
+    // Time bonus (based on speed)
+    const timeEfficiency = 1 - seconds / (pairs * 10);
+    score += Math.floor(settings.timeBonusMax * timeEfficiency);
+
+    efficiency = calculateEfficiencyGrade(moves, pairs);
+  } else {
+    // Partial score for incomplete games
+    const completionRatio = matchedIds.size / pairs;
+    score = Math.floor(settings.baseScore * completionRatio * 0.5);
+    efficiency = "N/A";
+  }
+
+  score = Math.max(
+    100,
+    Math.min(
+      score,
+      settings.baseScore + settings.perfectBonus + settings.timeBonusMax
+    )
+  );
+  return { score, efficiency };
+}
+
+function calculateEfficiencyGrade(moves, pairs) {
+  const perfectMoves = pairs * 2;
+  const efficiencyRatio = perfectMoves / moves;
+
+  if (efficiencyRatio >= 0.9) return "A+";
+  if (efficiencyRatio >= 0.8) return "A";
+  if (efficiencyRatio >= 0.7) return "B";
+  if (efficiencyRatio >= 0.6) return "C";
+  if (efficiencyRatio >= 0.5) return "D";
+  return "F";
+}
+
+function updateResultsModal(isWin, score, efficiency) {
+  elements.finalMoves.textContent = moves;
+  elements.finalTime.textContent = elements.timeDisplay.textContent;
+  elements.finalScore.textContent = score;
+  elements.efficiencyDisplay.textContent = efficiency;
+  elements.efficiencyDisplay.dataset.grade = efficiency;
+
+  if (isWin) {
+    elements.modalTitle.textContent =
+      efficiency === "A+"
+        ? "✨ Perfect Game! ✨"
+        : `✨ You Won! ✨ (${efficiency})`;
+    elements.modalTitle.style.color = "#4CAF50";
+  } else {
+    elements.modalTitle.textContent = "😞 Out of Moves!";
+    elements.modalTitle.style.color = "#F44336";
+  }
+}
+
+function updateBestScores(isWin, score) {
+  if (
+    isWin &&
+    (!bestScores[currentDifficulty] || score > bestScores[currentDifficulty])
+  ) {
+    bestScores[currentDifficulty] = score;
+    localStorage.setItem("luxuryMemoryBestScores", JSON.stringify(bestScores));
+    elements.bestDisplay.textContent = score;
+    elements.bestMessage.style.display = "block";
+  } else {
+    elements.bestMessage.style.display = "none";
   }
 }
 
@@ -316,69 +359,49 @@ function updateTimerDisplay() {
     .toString()
     .padStart(2, "0");
   const secs = (seconds % 60).toString().padStart(2, "0");
-  timeDisplay.textContent = `${mins}:${secs}`;
+  elements.timeDisplay.textContent = `${mins}:${secs}`;
 }
 
-// Calculate Score
-function calculateScore(isWin) {
-  const baseScore = isWin ? 1000 : 500;
-  const timeBonus = Math.max(0, 300 - Math.floor(seconds / 2));
-  const moveBonus = Math.max(0, moveLimits[currentDifficulty] - moves);
-  return Math.max(100, baseScore + timeBonus + moveBonus);
+// Responsive Grid
+function adjustCardGrid() {
+  const headerHeight = document.querySelector(".game-header").offsetHeight;
+  const availableHeight = window.innerHeight - headerHeight - 40;
+  elements.gameBoard.style.height = `${availableHeight}px`;
+
+  const aspectRatio = window.innerWidth / window.innerHeight;
+  elements.gameBoard.style.gridTemplateColumns =
+    aspectRatio < 0.8 ? "repeat(3, 1fr)" : "repeat(4, 1fr)";
 }
 
-// End Game (win or lose)
-function endGame(isWin) {
-  gameActive = false;
-  clearInterval(timer);
-
-  if (soundEnabled) {
-    isWin ? winSound.play() : loseSound.play();
+// Sound Functions
+function playSound(soundElement) {
+  if (soundEnabled && soundElement) {
+    soundElement.currentTime = 0;
+    soundElement.play().catch((e) => console.log("Sound play failed:", e));
   }
-
-  const score = calculateScore(isWin);
-  finalMoves.textContent = moves;
-  finalTime.textContent = timeDisplay.textContent;
-  finalScore.textContent = score;
-
-  if (
-    isWin &&
-    (!bestScores[currentDifficulty] || moves < bestScores[currentDifficulty])
-  ) {
-    bestScores[currentDifficulty] = moves;
-    localStorage.setItem("luxuryMemoryBestScores", JSON.stringify(bestScores));
-    bestDisplay.textContent = moves;
-    bestMessage.style.display = "block";
-  } else {
-    bestMessage.style.display = "none";
-  }
-
-  // Update modal message based on win/lose
-  const modalTitle = document.querySelector(".modal-content h2");
-  modalTitle.textContent = isWin ? "✨ You Won! ✨" : "😞 Out of Moves!";
-  modalTitle.style.color = isWin ? "#4CAF50" : "#F44336";
-
-  modal.style.display = "flex";
-  document.querySelector(".modal-content").classList.add("animate__bounceIn");
 }
 
-// Set Difficulty
-function setDifficulty(difficulty) {
-  currentDifficulty = difficulty;
-  difficultyBtns.forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.difficulty === difficulty);
-  });
-  initGame();
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  elements.soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
+  localStorage.setItem("luxuryMemorySoundEnabled", soundEnabled);
 }
 
-// Share Game
+// Share Function
 function shareGame() {
   const gameUrl = window.location.href;
-  const shareText = `I scored ${finalScore.textContent} in Luxury Memory (${currentDifficulty} mode)! Time: ${finalTime.textContent}, Moves: ${finalMoves.textContent}. Try it! ${gameUrl}`;
+  const shareText =
+    `I scored ${elements.finalScore.textContent} in Luxury Memory (${currentDifficulty} mode)! ` +
+    `Time: ${elements.finalTime.textContent}, Moves: ${elements.finalMoves.textContent}, ` +
+    `Efficiency: ${elements.efficiencyDisplay.textContent}. Try to beat me! ${gameUrl}`;
 
   if (navigator.share) {
     navigator
-      .share({ title: "Luxury Memory Game", text: shareText, url: gameUrl })
+      .share({
+        title: "Luxury Memory Game",
+        text: shareText,
+        url: gameUrl,
+      })
       .catch((err) => console.log("Share failed:", err));
   } else if (navigator.clipboard) {
     navigator.clipboard
@@ -390,30 +413,36 @@ function shareGame() {
   }
 }
 
-// Toggle Sound
-function toggleSound() {
-  soundEnabled = !soundEnabled;
-  soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
-  localStorage.setItem("luxuryMemorySoundEnabled", soundEnabled);
+// Event Listeners
+function setupEventListeners() {
+  elements.restartBtn.addEventListener("click", initGame);
+  elements.playAgainBtn.addEventListener("click", () => {
+    elements.modal.style.display = "none";
+    initGame();
+  });
+  elements.shareBtn.addEventListener("click", shareGame);
+  elements.soundBtn.addEventListener("click", toggleSound);
+
+  elements.difficultyBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentDifficulty = btn.dataset.difficulty;
+      initGame();
+    });
+  });
+
+  window.addEventListener("resize", adjustCardGrid);
 }
 
-// Event Listeners
-restartBtn.addEventListener("click", initGame);
-playAgainBtn.addEventListener("click", () => {
-  modal.style.display = "none";
+// Initialize
+function initializeGame() {
+  elements.soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
+  setupEventListeners();
   initGame();
-});
-shareBtn.addEventListener("click", shareGame);
-soundBtn.addEventListener("click", toggleSound);
-difficultyBtns.forEach((btn) => {
-  btn.addEventListener("click", () => setDifficulty(btn.dataset.difficulty));
-});
+}
 
-// Start game on load
-window.addEventListener("DOMContentLoaded", () => {
-  if (localStorage.getItem("luxuryMemorySoundEnabled") === "false") {
-    soundEnabled = false;
-    soundBtn.textContent = "🔇";
-  }
-  initGame();
-});
+// Start the game when ready
+if (document.readyState === "complete") {
+  initializeGame();
+} else {
+  window.addEventListener("DOMContentLoaded", initializeGame);
+}
