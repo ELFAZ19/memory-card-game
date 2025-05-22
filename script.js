@@ -23,11 +23,11 @@ const cardSets = {
 // Game settings by difficulty level
 const gameSettings = {
   easy: {
-    moveLimit: 20, // Maximum allowed moves
-    baseScore: 1000, // Base points for completing
-    perfectBonus: 500, // Bonus for perfect game
-    timeBonus: 300, // Maximum time bonus
-    movePenalty: 20, // Points lost per extra move
+    moveLimit: 20,
+    baseScore: 1000,
+    perfectBonus: 500,
+    timeBonus: 300,
+    movePenalty: 20,
   },
   medium: {
     moveLimit: 30,
@@ -64,7 +64,6 @@ let soundEnabled = true;
 // DOM Elements
 const gameBoard = document.getElementById("game-board");
 const movesDisplay = document.getElementById("moves");
-const movesLeftDisplay = document.getElementById("moves-left");
 const timeDisplay = document.getElementById("time");
 const bestDisplay = document.getElementById("best");
 const restartBtn = document.getElementById("restart-btn");
@@ -81,7 +80,6 @@ const difficultyBtns = document.querySelectorAll(".difficulty-btn");
 const flipSound = document.getElementById("flip-sound");
 const matchSound = document.getElementById("match-sound");
 const winSound = document.getElementById("win-sound");
-const loseSound = document.getElementById("lose-sound");
 
 // Initialize Game
 function initGame() {
@@ -91,19 +89,12 @@ function initGame() {
   matchedIds.clear();
   gameActive = true;
 
-  // Update UI
   movesDisplay.textContent = moves;
-  movesLeftDisplay.textContent = gameSettings[currentDifficulty].moveLimit;
   updateTimerDisplay();
   clearInterval(timer);
 
-  // Reset move counter color
-  movesLeftDisplay.style.color = "#4CAF50";
-
-  // Load best score
   bestDisplay.textContent = bestScores[currentDifficulty] ?? "--";
 
-  // Create card pairs and shuffle
   const set = cardSets[currentDifficulty];
   cards = set
     .flatMap((card) => [
@@ -114,21 +105,9 @@ function initGame() {
 
   renderCards();
   startTimer();
-  adjustCardGrid();
 }
 
-// Adjust grid layout based on screen size
-function adjustCardGrid() {
-  const headerHeight = document.querySelector(".game-header").offsetHeight;
-  const availableHeight = window.innerHeight - headerHeight - 40;
-  gameBoard.style.height = `${availableHeight}px`;
-
-  const aspectRatio = window.innerWidth / window.innerHeight;
-  gameBoard.style.gridTemplateColumns =
-    aspectRatio < 0.8 ? "repeat(3, 1fr)" : "repeat(4, 1fr)";
-}
-
-// Create card element with flip animation
+// Create card element
 function createCardElement(card) {
   const cardElement = document.createElement("div");
   cardElement.className = "card";
@@ -157,26 +136,15 @@ function createCardElement(card) {
   return cardElement;
 }
 
-// Render all cards and update moves left
+// Render all cards
 function renderCards() {
   gameBoard.innerHTML = "";
   cards.forEach((card) => {
     gameBoard.appendChild(createCardElement(card));
   });
-
-  // Update moves left display
-  const movesLeft = gameSettings[currentDifficulty].moveLimit - moves;
-  movesLeftDisplay.textContent = movesLeft;
-
-  // Color coding for moves left
-  if (movesLeft < gameSettings[currentDifficulty].moveLimit * 0.3) {
-    movesLeftDisplay.style.color = "#ff5252"; // Red
-  } else if (movesLeft < gameSettings[currentDifficulty].moveLimit * 0.6) {
-    movesLeftDisplay.style.color = "#ffb74d"; // Orange
-  }
 }
 
-// Handle card clicks with flip animation
+// Handle card clicks
 function handleCardClick(card) {
   if (
     !gameActive ||
@@ -187,30 +155,22 @@ function handleCardClick(card) {
     return;
   }
 
-  // Check move limit
   if (moves >= gameSettings[currentDifficulty].moveLimit) {
     endGame(false);
     return;
   }
 
-  // Play sound
   if (soundEnabled) {
     flipSound.currentTime = 0;
     flipSound.play();
   }
 
-  // Flip animation
-  const cardElement = document.querySelector(`[data-id="${card.uniqueId}"]`);
-  cardElement.classList.add("flipping");
-  setTimeout(() => {
-    cardElement.classList.remove("flipping");
-    flippedCards.push(card);
-    renderCards();
-    checkForMatch();
-  }, 150);
+  flippedCards.push(card);
+  renderCards();
+  checkForMatch();
 }
 
-// Check for matches after flipping two cards
+// Check for matches
 function checkForMatch() {
   if (flippedCards.length === 2) {
     moves++;
@@ -218,7 +178,6 @@ function checkForMatch() {
 
     const [card1, card2] = flippedCards;
     if (card1.id === card2.id) {
-      // Match found
       matchedIds.add(card1.id);
       flippedCards = [];
 
@@ -233,28 +192,18 @@ function checkForMatch() {
         matchSound.play();
       }
     } else {
-      // No match - flip back after delay
       setTimeout(() => {
-        flippedCards.forEach((card) => {
-          const cardElement = document.querySelector(
-            `[data-id="${card.uniqueId}"]`
-          );
-          cardElement.classList.add("flipping");
-        });
-
-        setTimeout(() => {
-          flippedCards = [];
-          renderCards();
-        }, 150);
+        flippedCards = [];
+        renderCards();
       }, 1000);
     }
   }
 }
 
-// Calculate efficiency grade (A+ to F)
+// Calculate efficiency grade
 function calculateEfficiency() {
   const pairs = cardSets[currentDifficulty].length;
-  const perfectMoves = pairs * 2; // Minimum possible moves
+  const perfectMoves = pairs * 2;
   const efficiencyRatio = perfectMoves / moves;
 
   if (efficiencyRatio >= 0.9) return { grade: "A+", color: "#4CAF50" };
@@ -265,37 +214,29 @@ function calculateEfficiency() {
   return { grade: "F", color: "#F44336" };
 }
 
-// Calculate score based on performance
+// Calculate score
 function calculateScore(isWin) {
   const settings = gameSettings[currentDifficulty];
   const pairs = cardSets[currentDifficulty].length;
-  const perfectMoves = pairs * 2; // Minimum possible moves
+  const perfectMoves = pairs * 2;
 
   let score = 0;
   let efficiency = { grade: "F", color: "#F44336" };
 
   if (isWin) {
-    // Base score
     score = settings.baseScore;
-
-    // Efficiency bonus
     const moveEfficiency =
       1 - (moves - perfectMoves) / (settings.moveLimit - perfectMoves);
     score += Math.floor(settings.perfectBonus * moveEfficiency);
-
-    // Time bonus (faster = better)
     const timeEfficiency = 1 - seconds / (pairs * 10);
     score += Math.floor(settings.timeBonus * timeEfficiency);
-
     efficiency = calculateEfficiency();
   } else {
-    // Partial score for incomplete games
     const completionRatio = matchedIds.size / pairs;
     score = Math.floor(settings.baseScore * completionRatio * 0.5);
     efficiency = { grade: "N/A", color: "#9E9E9E" };
   }
 
-  // Ensure score is within bounds
   score = Math.max(
     100,
     Math.min(
@@ -307,17 +248,15 @@ function calculateScore(isWin) {
   return { score, efficiency };
 }
 
-// End game (win or lose)
+// End game
 function endGame(isWin) {
   gameActive = false;
   clearInterval(timer);
 
-  // Play sound
   if (soundEnabled) {
     isWin ? winSound.play() : loseSound.play();
   }
 
-  // Calculate results
   const { score, efficiency } = calculateScore(isWin);
   finalMoves.textContent = moves;
   finalTime.textContent = timeDisplay.textContent;
@@ -325,7 +264,6 @@ function endGame(isWin) {
   efficiencyDisplay.textContent = efficiency.grade;
   efficiencyDisplay.style.color = efficiency.color;
 
-  // Update best score if needed
   if (
     isWin &&
     (!bestScores[currentDifficulty] || score > bestScores[currentDifficulty])
@@ -338,7 +276,6 @@ function endGame(isWin) {
     bestMessage.style.display = "none";
   }
 
-  // Update modal title based on performance
   const modalTitle = document.querySelector(".modal-content h2");
   if (isWin) {
     modalTitle.textContent =
@@ -351,12 +288,11 @@ function endGame(isWin) {
     modalTitle.style.color = "#F44336";
   }
 
-  // Show modal with animation
   modal.style.display = "flex";
   document.querySelector(".modal-content").classList.add("animate__bounceIn");
 }
 
-// Set difficulty level
+// Set difficulty
 function setDifficulty(difficulty) {
   currentDifficulty = difficulty;
   difficultyBtns.forEach((btn) => {
@@ -388,7 +324,7 @@ function shareGame() {
   }
 }
 
-// Toggle sound on/off
+// Toggle sound
 function toggleSound() {
   soundEnabled = !soundEnabled;
   soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
@@ -425,7 +361,7 @@ difficultyBtns.forEach((btn) => {
   btn.addEventListener("click", () => setDifficulty(btn.dataset.difficulty));
 });
 
-// Initialize game on load
+// Initialize game
 window.addEventListener("DOMContentLoaded", () => {
   if (localStorage.getItem("luxuryMemorySoundEnabled") === "false") {
     soundEnabled = false;

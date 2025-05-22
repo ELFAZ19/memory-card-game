@@ -133,34 +133,21 @@ body {
     color: transparent;
 }
 
-/* Game Board */
+/* Game Board - Optimized Version */
 .game-board {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     perspective: 1000px;
-    max-height: 60vh;
-    overflow-y: auto;
-    padding: 5px;
-}
-
-/* Scrollbar styling */
-.game-board::-webkit-scrollbar {
-    width: 6px;
-}
-
-.game-board::-webkit-scrollbar-track {
-    background: rgba(255, 215, 0, 0.1);
-    border-radius: 3px;
-}
-
-.game-board::-webkit-scrollbar-thumb {
-    background: linear-gradient(var(--gold-dark), var(--gold-light));
-    border-radius: 3px;
+    width: 100%;
+    padding: 10px;
+    margin: 0 auto;
+    min-height: 400px;
 }
 
 .card {
     aspect-ratio: 3/4;
+    height: 120px;
     position: relative;
     transform-style: preserve-3d;
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -214,7 +201,7 @@ body {
     background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
     border: 2px solid var(--gold-accent);
     transform: rotateY(180deg);
-    font-size: 2.8rem;
+    font-size: 2rem;
     color: var(--gold-light);
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
@@ -428,11 +415,6 @@ body {
     50% { transform: translateY(-15px); }
 }
 
-@keyframes cardFlip {
-    0% { transform: rotateY(0); }
-    100% { transform: rotateY(180deg); }
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
     .game-board {
@@ -440,8 +422,12 @@ body {
         gap: 10px;
     }
     
+    .card {
+        height: 100px;
+    }
+    
     .card-front {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
     
     .game-header h1 {
@@ -463,11 +449,11 @@ body {
     }
     
     .card {
-        aspect-ratio: 3/4;
+        height: 80px;
     }
     
     .card-front {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
     }
     
     .game-header h1 {
@@ -487,123 +473,18 @@ body {
     }
 }
 
-/* Game Board - Now fits screen without scrolling */
-.game-board {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1vmin; /* Responsive gap */
-    perspective: 1000px;
-    width: 100%;
-    height: calc(100vh - 220px); /* Adjust based on header height */
-    max-height: 65vh;
-    padding: 1vmin;
-    box-sizing: border-box;
-  }
-  
-  /* Dynamic Card Sizing */
-  .card {
-    width: 100%;
-    height: 100%;
-    max-width: 22vw;
-    max-height: 22vh;
-    min-width: 60px;
-    min-height: 90px;
-    position: relative;
-    transform-style: preserve-3d;
-    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    cursor: pointer;
-    border-radius: 10px;
-    aspect-ratio: 3/4; /* Maintain card proportions */
-  }
-  
-  /* Responsive Adjustments */
-  @media (max-width: 900px) {
-    .game-board {
-      grid-template-columns: repeat(4, 1fr);
-      height: calc(100vh - 200px);
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .game-board {
-      grid-template-columns: repeat(3, 1fr);
-      height: calc(100vh - 180px);
-    }
-    
-    .card {
-      max-width: 25vw;
-      max-height: 25vh;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .game-board {
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.5vmin;
-      height: calc(100vh - 160px);
-    }
-    
-    .card {
-      max-width: 20vw;
-      max-height: 20vh;
-      min-width: 50px;
-      min-height: 75px;
-    }
-    
-    .card-front {
-      font-size: 1.5rem !important;
-    }
-  }
-  
-  /* For very small screens */
-  @media (max-height: 600px) {
-    .game-header {
-      padding: 5px;
-    }
-    
-    .game-board {
-      height: calc(100vh - 120px);
-    }
-    
-    .stat {
-      padding: 5px 10px;
-      min-width: 60px;
-    }
-  }
-
-  .modal-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 25px;
-}
-
-.btn-outline {
-    background: transparent;
-    color: var(--gold-light);
-    border: 2px solid var(--gold-light);
-}
-
-.btn-outline:hover {
-    background: rgba(255, 215, 0, 0.1);
-}
-
-.btn-icon {
-    margin-right: 8px;
-}
-
 /* Moves left indicator */
 #moves-left {
     transition: color 0.3s ease;
-  }
-  
-  /* Efficiency grades */
-  #efficiency {
+}
+
+/* Efficiency grades */
+#efficiency {
     font-weight: bold;
-  }
-  #efficiency[data-grade="A+"] { color: #4CAF50; }
-  #efficiency[data-grade="A"] { color: #4CAF50; }
-  #efficiency[data-grade="B"] { color: #8BC34A; }
-  #efficiency[data-grade="C"] { color: #FFC107; }
-  #efficiency[data-grade="D"] { color: #FF9800; }
-  #efficiency[data-grade="F"] { color: #F44336; }
+}
+#efficiency[data-grade="A+"] { color: #4CAF50; }
+#efficiency[data-grade="A"] { color: #4CAF50; }
+#efficiency[data-grade="B"] { color: #8BC34A; }
+#efficiency[data-grade="C"] { color: #FFC107; }
+#efficiency[data-grade="D"] { color: #FF9800; }
+#efficiency[data-grade="F"] { color: #F44336; }
